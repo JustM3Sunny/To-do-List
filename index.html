@@ -1,0 +1,254 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="./favicon.ico" type="image/x-icon">
+    <title>To-Do List</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to right, #49276d, #3a3b3c);
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        body.dark-mode {
+            background: linear-gradient(to right, #000000, #1a1a1a);
+            color: #eee;
+        }
+
+        .todo-cont {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            transition: background 0.5s ease;
+            border: #ffff 20px;
+            
+        }
+
+        body.dark-mode .todo-cont {
+            background: rgba(0, 0, 0, 0.7);
+            
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            color: #f7f3f8;
+        }
+
+        #todo-input {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 5px;
+            outline: none;
+            font-size: 1rem;
+        }
+
+        #Add-btn {
+            padding: 10px 15px;
+            background-color: #ffffff;
+            color: rgb(16, 15, 15);
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.3s, background-color 0.3s;
+        }
+
+        #Add-btn:hover {
+            background-color: #ffffff;
+            transform: scale(1.05);
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+
+        li {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s, transform 0.3s;
+            cursor: grab;
+        }
+
+        li.dragging {
+            opacity: 0.5;
+        }
+
+        li:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.02);
+        }
+
+        .done {
+            text-decoration: line-through;
+            color: gray;
+        }
+
+        .del-btn {
+            margin-left: 10px;
+            color: #e74c3c;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: color 0.3s, transform 0.3s;
+        }
+
+        .del-btn:hover {
+            color: #ff6b6b;
+            transform: scale(1.1);
+        }
+
+        #theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: none;
+            background: #f0f0f0;
+            color: #333;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        #theme-toggle:hover {
+            background: #333;
+            color: #fff;
+        }
+
+        .task-counter {
+            margin-top: 10px;
+            font-size: 1rem;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <button id="theme-toggle">light🌞/Dark🌚</button>
+    <div class="todo-cont">
+        <h1>To-Do List</h1>
+        <input type="text" id="todo-input" placeholder="Add A New Task!" />
+        <button id="Add-btn">Add Task!</button>
+        <ul id="todo-list"></ul>
+        <div class="task-counter">Tasks Pending: <span id="task-count">0</span></div>
+    </div>
+    <script>
+        const themeToggle = document.getElementById("theme-toggle");
+        const input = document.querySelector("#todo-input");
+        const addBtn = document.querySelector("#Add-btn");
+        const list = document.querySelector("#todo-list");
+        const taskCount = document.getElementById("task-count");
+
+        // Toggle theme
+        themeToggle.addEventListener("click", () => {
+            document.body.classList.toggle("dark-mode");
+        });
+
+        // Add a new task
+        const updateTaskCount = () => {
+            const tasks = list.querySelectorAll("li:not(.done)").length;
+            taskCount.textContent = tasks;
+        };
+
+        const saveTasks = () => {
+            const tasks = Array.from(list.querySelectorAll("li")).map((li) => ({
+                text: li.querySelector("span").textContent,
+                done: li.querySelector("span").classList.contains("done"),
+            }));
+            localStorage.setItem("tasks", JSON.stringify(tasks));
+        };
+
+        const loadTasks = () => {
+            const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+            tasks.forEach(({ text, done }) => {
+                addTask(text, done);
+            });
+        };
+
+        const addTask = (taskText, done = false) => {
+            const li = document.createElement("li");
+            li.draggable = true;
+            li.innerHTML = `
+                <span class="${done ? "done" : ""}">${taskText}</span>
+                <button class="del-btn">Delete</button>
+            `;
+            list.appendChild(li);
+
+            li.querySelector("span").addEventListener("click", () => {
+                li.querySelector("span").classList.toggle("done");
+                saveTasks();
+                updateTaskCount();
+            });
+
+            li.querySelector(".del-btn").addEventListener("click", () => {
+                li.remove();
+                saveTasks();
+                updateTaskCount();
+            });
+
+            li.addEventListener("dragstart", () => li.classList.add("dragging"));
+            li.addEventListener("dragend", () => li.classList.remove("dragging"));
+
+            updateTaskCount();
+            saveTasks();
+        };
+
+        list.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            const afterElement = [...list.querySelectorAll("li:not(.dragging)")].reduce(
+                (closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = e.clientY - box.top - box.height / 2;
+                    return offset < 0 && offset > closest.offset ? { offset, element: child } : closest;
+                },
+                { offset: Number.NEGATIVE_INFINITY }
+            ).element;
+            const dragging = document.querySelector(".dragging");
+            if (afterElement == null) {
+                list.appendChild(dragging);
+            } else {
+                list.insertBefore(dragging, afterElement);
+            }
+        });
+
+        addBtn.addEventListener("click", () => {
+            const task = input.value.trim();
+            if (task) {
+                addTask(task);
+                input.value = "";
+            }
+        });
+
+        // Load tasks on page load
+        loadTasks();
+        updateTaskCount();
+    </script>
+</body>
+</html>
+
+
